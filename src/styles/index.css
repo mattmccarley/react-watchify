@@ -1,0 +1,11 @@
+@tailwind preflight;
+@tailwind utilities;
+@tailwind components;
+
+/* custom CSS begins here */
+.trailer-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
