@@ -10,7 +10,8 @@ class App extends Component {
     this.state = {
       movieList: null,
       isWatchingTrailer: false,
-      trailerId: null
+      trailerId: null,
+      currentSeed: null,
     }
 
     this.getPopularMovies = this.getPopularMovies.bind(this);
@@ -25,17 +26,19 @@ class App extends Component {
     const page = this.state.movieList ? this.state.movieList.page + 1 : 1;
     tmdb.movies.getPopular({page}, (data) => {
       this.setState({
-        movieList: JSON.parse(data)
+        movieList: JSON.parse(data),
+        currentSeed: 'popular'
       });
     }, (err) => {
       console.error(err);
     });
   }
 
-  getRecommendedMovies(id) {
+  getRecommendedMovies(id, title) {
     tmdb.movies.getRecommendations({id}, data => {
       this.setState({
-        movieList: JSON.parse(data)
+        movieList: JSON.parse(data),
+        currentSeed: title
       })
     }, err => {
       console.error(err);
@@ -77,6 +80,13 @@ class App extends Component {
           )
         }
         <h1>Watchify</h1>
+        <h2>
+          {
+            this.state.currentSeed === 'popular' ?
+            'Popular Movies' :
+            `Movies similar to ${this.state.currentSeed}`
+          }
+        </h2>
         <button className="p-4 bg-red text-white rounded-lg shadow-md"
           onClick={this.getPopularMovies}>
           Load More
@@ -85,8 +95,7 @@ class App extends Component {
           {this.state.movieList && this.state.movieList.results.map((movie) => {
             return (
               <div className=""
-                key={movie.id}
-                onClick={() => this.getRecommendedMovies(movie.id)}>
+                key={movie.id}>
                 <div className="m-4">
                   <img className="h-64"
                     src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${movie.poster_path}`}
@@ -97,6 +106,10 @@ class App extends Component {
                   <button className="p-2 rounded-lg shadow-md text-white bg-green"
                     onClick={() => this.playTrailer(movie.id)}>
                     Watch Trailer
+                  </button>
+                  <button className="p-2 rounded-lg shadow-md text-white bg-green"
+                    onClick={() => this.getRecommendedMovies(movie.id, movie.title)}>
+                    Get Similar Movies
                   </button>
                 </div>
               </div>
