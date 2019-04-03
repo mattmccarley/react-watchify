@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import tmdb from 'themoviedb-javascript-library';
+import { isAbsolute } from 'path';
 
 
 class App extends Component {
@@ -12,16 +13,23 @@ class App extends Component {
       quickList: [],
       clickFeed: [],
       currentSeed: null,
+      currentSeedCast: null,
       isWatchingTrailer: false,
       trailerId: null,
+      movieGenres: null,
     }
 
     this.getPopularMovies = this.getPopularMovies.bind(this);
     this.getRecommendedMovies = this.getRecommendedMovies.bind(this);
+    this.getMovieGenreList = this.getMovieGenreList.bind(this);
+    this.getMoviesByGenre = this.getMoviesByGenre.bind(this);
+    this.getMoviesByCastMember = this.getMoviesByCastMember.bind(this);
+    this.getCreditDetails = this.getCreditDetails.bind(this);
   }
 
   componentWillMount() {
     this.getPopularMovies();
+    this.getMovieGenreList();
   }
 
   componentDidUpdate() {
@@ -42,6 +50,48 @@ class App extends Component {
     });
   }
 
+  getMovieGenreList() {
+    if (!this.state.movieGenres) {
+      tmdb.genres.getMovieList({}, (data) => {
+        this.setState({
+          movieGenres: JSON.parse(data).genres,
+        });
+      }, (err) => {
+        console.error(err);
+      })
+    }
+  }
+
+  getMoviesByGenre(genreId, genreName) {
+    tmdb.discover.getMovies({
+      with_genres: `${genreId}`
+    }, (data) => {
+      var parsedData = JSON.parse(data);
+      this.setState((prevState) => ({
+        clickFeed: [...prevState.clickFeed, parsedData],
+        currentSeed: genreName,
+        currentSeedCast: null,
+      }));
+    }, (err) => {
+      console.error(err);
+    });
+  }
+
+  getMoviesByCastMember(castMemberId, castMemberName) {
+    tmdb.discover.getMovies({
+      with_cast: castMemberId
+    }, (data) => {
+      let parsedData = JSON.parse(data);
+      this.setState((prevState) => ({
+        clickFeed: [...prevState.clickFeed, parsedData],
+        currentSeed: castMemberName,
+        currentSeedCast: null,
+      }));
+    }, (err) => {
+      console.error(err);
+    })
+  }
+
   getRecommendedMovies(movieSeed) {
     let id = movieSeed.id;
     tmdb.movies.getRecommendations({id}, data => {
@@ -49,9 +99,24 @@ class App extends Component {
         clickFeed: [...prevState.clickFeed, JSON.parse(data)],
         currentSeed: movieSeed,
       }));
+
+    this.getCreditDetails(movieSeed);
+
     }, err => {
       console.error(err);
     });
+  }
+
+  getCreditDetails(movieSeed) {
+    let id = movieSeed.id;
+    tmdb.movies.getCredits({id: id}, (data) => {
+      var parsedData = JSON.parse(data);
+      this.setState({
+        currentSeedCast: parsedData.cast.slice(0, 6),
+      })
+    }, (err) => {
+      console.error(err);
+    })
   }
 
   playTrailer(id) {
@@ -93,14 +158,17 @@ class App extends Component {
           <div className="rounded-lg shadow-lg p-8 w-2/3">
             {this.state.clickFeed &&
               this.state.clickFeed.map((feedItem, index) => {
+                var currentSeedLabel = this.state.currentSeed.title ? `Recommendations based on ${this.state.currentSeed.title}` : `${this.state.currentSeed} Movies`;
+
                 return (
                   <div className="mb-8"
+                    key={index}
                     id={`feed-item-${index}`}>
                     {index === 0 && (
                       <h2>Popular Movies</h2>
                     )}
                     {index > 0 && (
-                      <h2>Recommendations based on {this.state.currentSeed.title}</h2>
+                      <h2>{currentSeedLabel}</h2>
                     )}
                     <div className="flex flex-wrap">
                       {feedItem.results.map(movie => {
@@ -122,22 +190,91 @@ class App extends Component {
           <div className="rounded-lg shadow-lg p-8 w-1/3 fixed pin-t pin-b pin-r">
             {this.state.currentSeed && (
                 <div>
-                  <div className="h-64">
-                    <img className="h-full m-0 p-0"
-                      src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${this.state.currentSeed.poster_path}`} alt=""/>
-                  </div>
-                  <h3>{this.state.currentSeed.title}</h3>
-                  {this.state.currentSeed.vote_average && (
-                    <p>rating: {this.state.currentSeed.vote_average}</p>
+                  {this.state.currentSeed.title && (
+                    <h2 className="mb-4">
+                      {this.state.currentSeed.title}
+                    </h2>
                   )}
-                  <p className="italic">
-                    {this.state.currentSeed.overview}
-                  </p>
-                  {this.state.currentSeed.id && (
-                    <button className="p-2 rounded-lg shadow-md text-white bg-green"
-                      onClick={() => this.playTrailer(this.state.currentSeed.id)}>
-                      Watch Trailer
-                    </button>
+
+                  {this.state.currentSeed.poster_path && this.state.currentSeed.overview && (
+                    <div className="flex mb-8">
+                      <div className="">
+                        <div className="h-64 mr-8">
+                          <img className="h-full m-0 p-0"
+                            src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${this.state.currentSeed.poster_path}`} alt=""/>
+                        </div>
+                      </div>
+                      <div className="w-1/2">
+                        <p className="italic mb-4">
+                          {this.state.currentSeed.overview}
+                        </p>
+                        {this.state.currentSeed.id && (
+                          <button className="p-2 rounded-lg shadow-md text-white bg-green"
+                            onClick={() => this.playTrailer(this.state.currentSeed.id)}>
+                            Watch Trailer
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {this.state.currentSeed.vote_average && (
+                    <div className="mb-8">
+                      <h3 className="mb-4">Rating</h3>
+                      <div className="bg-black text-white w-12 h-12 rounded-full flex flex-col justify-center items-center">
+                        <span>{this.state.currentSeed.vote_average}</span>
+                      </div> 
+                    </div>
+                  )}
+
+                  {this.state.currentSeed.genre_ids && (
+                    <div className="mb-8">
+                      <h3 className="mb-4">Genres</h3>
+                      <ul className="flex list-reset flex-wrap">
+                        {this.state.currentSeed.genre_ids.map(id => {
+                          var genreName = this.state.movieGenres.find(genre => genre.id === id).name;
+                          return (
+                            <li className="mr-2 mb-2 text-blue underline cursor-pointer"
+                              key={id}
+                              onClick={() => this.getMoviesByGenre(id, genreName)}>
+                              {genreName}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                  )}
+
+
+                  
+
+                  {this.state.currentSeedCast && (
+                    <div>
+                      <h3>Cast</h3>
+                      <ul className="list-reset flex flex-wrap">
+                        {this.state.currentSeedCast.map(castMember => {
+                          let id = castMember.id;
+                          let name = castMember.name;
+                          let imagePath = castMember.profile_path;                     
+
+                          return (
+                            <li className="w-1/3 p-4 cursor-pointer flex flex-col items-center" 
+                              key={id}
+                              onClick={() => this.getMoviesByCastMember(id, name)}>
+                              <div className="w-16 h-auto mb-2">
+                                <img className=""
+                                  src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${imagePath}`}
+                                  alt=""/>
+                              </div>
+                              <p>{name}</p>
+                            </li>
+                          )
+    
+                          })
+                      }
+                      </ul>
+
+                    </div>
                   )}
                 </div>
               )
