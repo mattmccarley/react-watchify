@@ -8,10 +8,11 @@ class App extends Component {
     tmdb.common.api_key = "1d332297db144df89557e1d191ef8368";
     
     this.state = {
-      movieList: null,
+      quickList: [],
+      clickFeed: [],
+      currentSeed: null,
       isWatchingTrailer: false,
       trailerId: null,
-      currentSeed: null,
     }
 
     this.getPopularMovies = this.getPopularMovies.bind(this);
@@ -22,24 +23,31 @@ class App extends Component {
     this.getPopularMovies();
   }
 
+  componentDidUpdate() {
+    if (this.state.clickFeed.length > 0) {
+      const element = document.getElementById(`feed-item-${this.state.clickFeed.length - 1}`);
+      element.scrollIntoView({block: 'start', behavior: 'smooth'});
+    }
+  }
+
   getPopularMovies() {
-    const page = this.state.movieList ? this.state.movieList.page + 1 : 1;
-    tmdb.movies.getPopular({page}, (data) => {
-      this.setState({
-        movieList: JSON.parse(data),
-        currentSeed: 'popular'
-      });
+    tmdb.movies.getPopular({}, (data) => {
+      this.setState((prevState) => ({
+        clickFeed: [...prevState.clickFeed, JSON.parse(data)],
+        currentSeed: JSON.parse(data),
+      }));
     }, (err) => {
       console.error(err);
     });
   }
 
-  getRecommendedMovies(id, title) {
+  getRecommendedMovies(movieSeed) {
+    let id = movieSeed.id;
     tmdb.movies.getRecommendations({id}, data => {
-      this.setState({
-        movieList: JSON.parse(data),
-        currentSeed: title
-      })
+      this.setState((prevState) => ({
+        clickFeed: [...prevState.clickFeed, JSON.parse(data)],
+        currentSeed: movieSeed,
+      }));
     }, err => {
       console.error(err);
     });
@@ -63,7 +71,7 @@ class App extends Component {
     return (
       <div>
         {this.state.isWatchingTrailer && (
-          <div className="fixed pin bg-grey-darker"
+          <div className="fixed pin bg-grey-darker z-10"
             onClick={() => this.setState({ isWatchingTrailer: false })}>
             <div className="trailer-container">
               <iframe
@@ -80,41 +88,60 @@ class App extends Component {
           )
         }
         <h1>Watchify</h1>
-        <h2>
-          {
-            this.state.currentSeed === 'popular' ?
-            'Popular Movies' :
-            `Movies similar to ${this.state.currentSeed}`
-          }
-        </h2>
-        <button className="p-4 bg-red text-white rounded-lg shadow-md"
-          onClick={this.getPopularMovies}>
-          Load More
-        </button>
-        <div className="flex flex-wrap">
-          {this.state.movieList && this.state.movieList.results.map((movie) => {
-            return (
-              <div className=""
-                key={movie.id}>
-                <div className="m-4">
-                  <img className="h-64"
-                    src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${movie.poster_path}`}
-                    alt=""/>
-                  <div className="">
-                    {movie.vote_average}
+        <div className="flex">
+          <div className="rounded-lg shadow-lg p-8 w-2/3">
+            {this.state.clickFeed &&
+              this.state.clickFeed.map((feedItem, index) => {
+                return (
+                  <div className="mb-8"
+                    id={`feed-item-${index}`}>
+                    {index === 0 && (
+                      <h2>Popular Movies</h2>
+                    )}
+                    {index > 0 && (
+                      <h2>Recommendations based on {this.state.currentSeed.title}</h2>
+                    )}
+                    <div className="flex flex-wrap">
+                      {feedItem.results.map(movie => {
+                        return (
+                          <div className="m-0 p-0 w-1/5 cursor-pointer"
+                            key={movie.id}
+                            onClick={() => this.getRecommendedMovies(movie)}>
+                            <img className="h-full w-full m-0 p-0"
+                              src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${movie.poster_path}`} alt=""/>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
-                  <button className="p-2 rounded-lg shadow-md text-white bg-green"
-                    onClick={() => this.playTrailer(movie.id)}>
-                    Watch Trailer
-                  </button>
-                  <button className="p-2 rounded-lg shadow-md text-white bg-green"
-                    onClick={() => this.getRecommendedMovies(movie.id, movie.title)}>
-                    Get Similar Movies
-                  </button>
+                )}
+                )
+              }
+          </div>
+          <div className="rounded-lg shadow-lg p-8 w-1/3 fixed pin-t pin-b pin-r">
+            {this.state.currentSeed && (
+                <div>
+                  <div className="h-64">
+                    <img className="h-full m-0 p-0"
+                      src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${this.state.currentSeed.poster_path}`} alt=""/>
+                  </div>
+                  <h3>{this.state.currentSeed.title}</h3>
+                  {this.state.currentSeed.vote_average && (
+                    <p>rating: {this.state.currentSeed.vote_average}</p>
+                  )}
+                  <p className="italic">
+                    {this.state.currentSeed.overview}
+                  </p>
+                  {this.state.currentSeed.id && (
+                    <button className="p-2 rounded-lg shadow-md text-white bg-green"
+                      onClick={() => this.playTrailer(this.state.currentSeed.id)}>
+                      Watch Trailer
+                    </button>
+                  )}
                 </div>
-              </div>
-            );
-          })}
+              )
+            }
+          </div>
         </div>
       </div>
     );
