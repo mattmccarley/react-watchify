@@ -5,7 +5,8 @@ import tmdb from 'themoviedb-javascript-library';
 class App extends Component {
   constructor(props) {
     super(props);
-    tmdb.common.api_key = "1d332297db144df89557e1d191ef8368";
+    tmdb.common.api_key = '1d332297db144df89557e1d191ef8368';
+    tmdb.common.base_uri = 'https://api.themoviedb.org/3/';
     
     this.state = {
       quickList: [],
