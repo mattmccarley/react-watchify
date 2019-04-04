@@ -218,20 +218,26 @@ class App extends Component {
                     <div className="flex mb-8">
                       <div className="">
                         <div className="h-64 mr-4 mb-4">
-                          <img className="h-full m-0 p-0 min-w-full"
+                          <img className="h-full m-0 p-0 w-auto"
                             src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${this.state.currentSeed.poster_path}`} alt=""/>
                         </div>
 
                         {this.state.currentSeed.id && (
-                          <div>
-                            <button className="p-2 rounded-lg shadow-md text-white bg-green mb-2"
+                          <div className="">
+                            <button className="p-2 rounded-lg shadow text-white bg-green mb-2 mr-2"
                               onClick={() => this.playTrailer(this.state.currentSeed.id)}>
                               Watch Trailer
                             </button>
-                            <button className="p-2 rounded-lg shadow-md text-white bg-black"
+                            <button className="p-2 rounded-lg shadow text-white bg-black mb-2 mr-2"
                               onClick={() => this.addToQuickList(this.state.currentSeed)}>
                               + Quick List
                             </button>
+                            <a className ="p-2 rounded-lg shadow text-blue bg-grey-lightest cursor-pointer no-underline"
+                              href={`https://www.google.com/search?q=${this.state.currentSeed.title}+Movie+${this.state.currentSeed.release_date.slice(0,4)}`}
+                              target="_blank"
+                              rel="noopener noreferrer">
+                              Where To Watch
+                            </a>
                           </div>
                         )}
 
