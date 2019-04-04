@@ -112,7 +112,7 @@ class App extends Component {
     tmdb.movies.getCredits({id: id}, (data) => {
       var parsedData = JSON.parse(data);
       this.setState({
-        currentSeedCast: parsedData.cast.slice(0, 6),
+        currentSeedCast: parsedData.cast.slice(0, 4),
       })
     }, (err) => {
       console.error(err);
@@ -190,67 +190,72 @@ class App extends Component {
           <div className="rounded-lg shadow-lg p-8 w-1/3 fixed pin-t pin-b pin-r">
             {this.state.currentSeed && (
                 <div>
-                  {this.state.currentSeed.title && (
+                  {this.state.currentSeed.title && this.state.currentSeed.release_date && (
                     <h2 className="mb-4">
-                      {this.state.currentSeed.title}
+                      {`${this.state.currentSeed.title} (${this.state.currentSeed.release_date.slice(0, 4)})`}
                     </h2>
                   )}
 
                   {this.state.currentSeed.poster_path && this.state.currentSeed.overview && (
                     <div className="flex mb-8">
                       <div className="">
-                        <div className="h-64 mr-8">
-                          <img className="h-full m-0 p-0"
+                        <div className="h-64 mr-4 mb-4">
+                          <img className="h-full m-0 p-0 min-w-full"
                             src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${this.state.currentSeed.poster_path}`} alt=""/>
                         </div>
-                      </div>
-                      <div className="w-1/2">
-                        <p className="italic mb-4">
-                          {this.state.currentSeed.overview}
-                        </p>
+
                         {this.state.currentSeed.id && (
                           <button className="p-2 rounded-lg shadow-md text-white bg-green"
                             onClick={() => this.playTrailer(this.state.currentSeed.id)}>
                             Watch Trailer
                           </button>
                         )}
+
+                      </div>
+                      <div className="w-1/2">
+                        <div className="flex">
+                          {this.state.currentSeed.vote_average && (
+                            <div className="mb-4 mr-4">
+                              <div className="bg-black text-white w-10 h-10 rounded-full flex flex-col justify-center items-center">
+                                <span>{this.state.currentSeed.vote_average}</span>
+                              </div> 
+                            </div>
+                          )}
+
+                          {this.state.currentSeed.genre_ids && (
+                            <div className="mb-4">
+                              <ul className="flex list-reset flex-wrap">
+                                {this.state.currentSeed.genre_ids.map(id => {
+                                  var genreName = this.state.movieGenres.find(genre => genre.id === id).name;
+                                  return (
+                                    <li className="mr-2 mb-2 p-2 bg-grey-light rounded cursor-pointer text-xs"
+                                      key={id}
+                                      onClick={() => this.getMoviesByGenre(id, genreName)}>
+                                      {genreName}
+                                    </li>
+                                  )
+                                })}
+                              </ul>
+                            </div>
+                          )}
+
+                        </div>
+                        <p className="mb-4">
+                          {this.state.currentSeed.overview}
+                        </p>
+
+                        
                       </div>
                     </div>
                   )}
 
-                  {this.state.currentSeed.vote_average && (
-                    <div className="mb-8">
-                      <h3 className="mb-4">Rating</h3>
-                      <div className="bg-black text-white w-12 h-12 rounded-full flex flex-col justify-center items-center">
-                        <span>{this.state.currentSeed.vote_average}</span>
-                      </div> 
-                    </div>
-                  )}
-
-                  {this.state.currentSeed.genre_ids && (
-                    <div className="mb-8">
-                      <h3 className="mb-4">Genres</h3>
-                      <ul className="flex list-reset flex-wrap">
-                        {this.state.currentSeed.genre_ids.map(id => {
-                          var genreName = this.state.movieGenres.find(genre => genre.id === id).name;
-                          return (
-                            <li className="mr-2 mb-2 text-blue underline cursor-pointer"
-                              key={id}
-                              onClick={() => this.getMoviesByGenre(id, genreName)}>
-                              {genreName}
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    </div>
-                  )}
+                  
 
 
                   
 
                   {this.state.currentSeedCast && (
-                    <div>
-                      <h3>Cast</h3>
+                    <div className="">
                       <ul className="list-reset flex flex-wrap">
                         {this.state.currentSeedCast.map(castMember => {
                           let id = castMember.id;
@@ -258,15 +263,15 @@ class App extends Component {
                           let imagePath = castMember.profile_path;                     
 
                           return (
-                            <li className="w-1/3 p-4 cursor-pointer flex flex-col items-center" 
+                            <li className="w-1/4 p-4 cursor-pointer flex flex-col items-center" 
                               key={id}
                               onClick={() => this.getMoviesByCastMember(id, name)}>
-                              <div className="w-16 h-auto mb-2">
-                                <img className=""
+                              <div className="w-16 h-16 overflow-hidden rounded-full mb-2 relative">
+                                <img className="absolute cast-member-image"
                                   src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${imagePath}`}
                                   alt=""/>
                               </div>
-                              <p>{name}</p>
+                              <p className="text-center">{name}</p>
                             </li>
                           )
     
