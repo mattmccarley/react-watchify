@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import tmdb from 'themoviedb-javascript-library';
-import { isAbsolute } from 'path';
 
 
 class App extends Component {
@@ -25,6 +24,7 @@ class App extends Component {
     this.getMoviesByGenre = this.getMoviesByGenre.bind(this);
     this.getMoviesByCastMember = this.getMoviesByCastMember.bind(this);
     this.getCreditDetails = this.getCreditDetails.bind(this);
+    this.addToQuickList = this.addToQuickList.bind(this);
   }
 
   componentWillMount() {
@@ -35,14 +35,15 @@ class App extends Component {
   componentDidUpdate() {
     if (this.state.clickFeed.length > 0) {
       const element = document.getElementById(`feed-item-${this.state.clickFeed.length - 1}`);
-      element.scrollIntoView({block: 'start', behavior: 'smooth'});
+      element.scrollIntoView({behavior: 'smooth'});
     }
   }
 
   getPopularMovies() {
     tmdb.movies.getPopular({}, (data) => {
+      var parsedData = JSON.parse(data);
       this.setState((prevState) => ({
-        clickFeed: [...prevState.clickFeed, JSON.parse(data)],
+        clickFeed: [...prevState.clickFeed, parsedData.results.slice(0, 12)],
         currentSeed: JSON.parse(data),
       }));
     }, (err) => {
@@ -53,8 +54,9 @@ class App extends Component {
   getMovieGenreList() {
     if (!this.state.movieGenres) {
       tmdb.genres.getMovieList({}, (data) => {
+        var parsedData = JSON.parse(data);
         this.setState({
-          movieGenres: JSON.parse(data).genres,
+          movieGenres: parsedData.genres,
         });
       }, (err) => {
         console.error(err);
@@ -68,7 +70,7 @@ class App extends Component {
     }, (data) => {
       var parsedData = JSON.parse(data);
       this.setState((prevState) => ({
-        clickFeed: [...prevState.clickFeed, parsedData],
+        clickFeed: [...prevState.clickFeed, parsedData.results.slice(0, 12)],
         currentSeed: genreName,
         currentSeedCast: null,
       }));
@@ -83,7 +85,7 @@ class App extends Component {
     }, (data) => {
       let parsedData = JSON.parse(data);
       this.setState((prevState) => ({
-        clickFeed: [...prevState.clickFeed, parsedData],
+        clickFeed: [...prevState.clickFeed, parsedData.results.slice(0, 12)],
         currentSeed: castMemberName,
         currentSeedCast: null,
       }));
@@ -95,8 +97,9 @@ class App extends Component {
   getRecommendedMovies(movieSeed) {
     let id = movieSeed.id;
     tmdb.movies.getRecommendations({id}, data => {
+      var parsedData = JSON.parse(data);
       this.setState((prevState) => ({
-        clickFeed: [...prevState.clickFeed, JSON.parse(data)],
+        clickFeed: [...prevState.clickFeed, parsedData.results.slice(0, 12)],
         currentSeed: movieSeed,
       }));
 
@@ -133,9 +136,25 @@ class App extends Component {
     })
   }
 
+  addToQuickList(movie) {
+    if (!this.state.quickList.includes(movie)) {
+      this.setState((prevState) => ({
+        quickList: [...prevState.quickList, movie]
+      }));
+    }
+  }
+
   render() {
     return (
       <div>
+        <div className="flex justify-between bg-yellow-dark fixed pin-t pin-l pin-r px-8 py-4 shadow">
+          <h1>Watchify</h1>
+          <div>
+            <button className="bg-black p-2 text-white uppercase font-thin text-xs rounded">
+              {`Quick List: ${this.state.quickList.length}`}
+            </button>
+          </div>
+        </div>
         {this.state.isWatchingTrailer && (
           <div className="fixed pin bg-grey-darker z-10"
             onClick={() => this.setState({ isWatchingTrailer: false })}>
@@ -153,9 +172,8 @@ class App extends Component {
           </div>
           )
         }
-        <h1>Watchify</h1>
-        <div className="flex">
-          <div className="rounded-lg shadow-lg p-8 w-2/3">
+        <div className="flex mt-16">
+          <div className="p-8 w-2/3">
             {this.state.clickFeed &&
               this.state.clickFeed.map((feedItem, index) => {
                 var currentSeedLabel = this.state.currentSeed.title ? `Recommendations based on ${this.state.currentSeed.title}` : `${this.state.currentSeed} Movies`;
@@ -171,9 +189,9 @@ class App extends Component {
                       <h2>{currentSeedLabel}</h2>
                     )}
                     <div className="flex flex-wrap">
-                      {feedItem.results.map(movie => {
+                      {feedItem.map(movie => {
                         return (
-                          <div className="m-0 p-0 w-1/5 cursor-pointer"
+                          <div className="m-0 p-0 w-1/6 cursor-pointer"
                             key={movie.id}
                             onClick={() => this.getRecommendedMovies(movie)}>
                             <img className="h-full w-full m-0 p-0"
@@ -187,7 +205,7 @@ class App extends Component {
                 )
               }
           </div>
-          <div className="rounded-lg shadow-lg p-8 w-1/3 fixed pin-t pin-b pin-r">
+          <div className="p-8 w-1/3 fixed pin-t pin-b pin-r mt-16">
             {this.state.currentSeed && (
                 <div>
                   {this.state.currentSeed.title && this.state.currentSeed.release_date && (
@@ -205,10 +223,16 @@ class App extends Component {
                         </div>
 
                         {this.state.currentSeed.id && (
-                          <button className="p-2 rounded-lg shadow-md text-white bg-green"
-                            onClick={() => this.playTrailer(this.state.currentSeed.id)}>
-                            Watch Trailer
-                          </button>
+                          <div>
+                            <button className="p-2 rounded-lg shadow-md text-white bg-green mb-2"
+                              onClick={() => this.playTrailer(this.state.currentSeed.id)}>
+                              Watch Trailer
+                            </button>
+                            <button className="p-2 rounded-lg shadow-md text-white bg-black"
+                              onClick={() => this.addToQuickList(this.state.currentSeed)}>
+                              + Quick List
+                            </button>
+                          </div>
                         )}
 
                       </div>
