@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import tmdb from 'themoviedb-javascript-library';
+import {debounce} from 'lodash';
+import { encode } from 'punycode';
 
 
 class App extends Component {
@@ -11,6 +13,11 @@ class App extends Component {
     this.state = {
       quickList: [],
       clickFeed: [],
+
+      searchInputValue: '',
+      isSearching: false,
+      movieSearchResults: null,
+
       currentSeed: null,
       currentSeedCast: null,
       isWatchingTrailer: false,
@@ -25,6 +32,11 @@ class App extends Component {
     this.getMoviesByCastMember = this.getMoviesByCastMember.bind(this);
     this.getCreditDetails = this.getCreditDetails.bind(this);
     this.addToQuickList = this.addToQuickList.bind(this);
+    this.handleSearch = this.handleSearch.bind(this);
+    this.searchForMovies = debounce(this.searchForMovies, 1000);
+    this.searchForCastMembers = debounce(this.searchForCastMembers, 1000);
+    this.handleSearchMovieClick = this.handleSearchMovieClick.bind(this);
+    this.handleSearchActorClick = this.handleSearchActorClick.bind(this);
   }
 
   componentWillMount() {
@@ -33,7 +45,7 @@ class App extends Component {
   }
 
   componentDidUpdate() {
-    if (this.state.clickFeed.length > 0) {
+    if (this.state.clickFeed.length > 0 && !this.state.isSearching) {
       const element = document.getElementById(`feed-item-${this.state.clickFeed.length - 1}`);
       element.scrollIntoView({behavior: 'smooth'});
     }
@@ -144,6 +156,62 @@ class App extends Component {
     }
   }
 
+  handleSearch(event) {
+    
+    const value = event.target.value;
+    
+    this.setState({
+      searchInputValue: value,
+      isSearching: value !== '',
+    });
+
+    this.searchForMovies(value);
+    this.searchForCastMembers(value);
+  }
+  
+  searchForMovies(value) {
+    tmdb.search.getMovie({
+      "query": encodeURI(value)
+    }, (data) => {
+      let parsedData = JSON.parse(data);
+      this.setState({
+        movieSearchResults: parsedData.results.slice(0,12),
+      });
+    }, (err) => {
+      console.error(err);
+  
+    });
+  }
+
+  searchForCastMembers(value) {
+    tmdb.search.getPerson({
+      "query": encodeURI(value)
+    }, (data) => {
+      let parsedData = JSON.parse(data);
+      this.setState({
+        castMemberSearchResults: parsedData.results.slice(0, 12),
+      });
+    }, (err) => {
+      console.error(err);
+    })
+  }
+
+  handleSearchMovieClick(movie) {
+    this.getRecommendedMovies(movie);
+    this.setState({
+      isSearching: false,
+      searchInputValue: '',
+    });
+  }
+
+  handleSearchActorClick(actorId, actorName) {
+    this.getMoviesByCastMember(actorId, actorName);
+    this.setState({
+      isSearching: false,
+      searchInputValue: '',
+    });
+  }
+
   render() {
     return (
       <div>
@@ -172,9 +240,64 @@ class App extends Component {
           </div>
           )
         }
+        
         <div className="flex mt-16">
           <div className="p-8 w-2/3">
-            {this.state.clickFeed &&
+            <input className="p-4 rounded-full bg-grey-light w-full mb-4"
+              placeholder="search by movie title, cast member name, or keyword"
+              onChange={this.handleSearch}
+              type="text"
+              value={this.state.searchInputValue}></input>
+
+
+            {this.state.isSearching && (
+              <div className="mt-16">
+                {this.state.movieSearchResults && (
+                  <div>
+                    <h2>Movies</h2>
+                    <div className="flex flex-wrap">
+                    {this.state.movieSearchResults.map(movie => {
+                      return (
+                          <div className="m-0 p-0 w-1/6 cursor-pointer"
+                            key={movie.id}
+                            onClick={() => this.handleSearchMovieClick(movie)}>
+                            <img className="h-full w-full m-0 p-0"
+                              src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${movie.poster_path}`} alt=""/>
+                          </div>
+                      )
+                    })}
+                    </div>
+                  </div>
+                )}
+
+                {this.state.castMemberSearchResults && (
+                  <div>
+                    <h2>Actors</h2>
+                    <div className="flex flex-wrap">
+                    {this.state.castMemberSearchResults.map(castMember => {
+                      let id = castMember.id;
+                      let name = castMember.name;
+                      let imagePath = castMember.profile_path;                     
+
+                      return (
+                        <div className="w-1/4 p-4 cursor-pointer flex flex-col items-center" 
+                          key={id}
+                          onClick={() => this.handleSearchActorClick(id, name)}>
+                          <div className="w-16 h-16 overflow-hidden rounded-full mb-2 relative">
+                            <img className="absolute cast-member-image"
+                              src={`https://image.tmdb.org/t/p/w370_and_h556_bestv2${imagePath}`}
+                              alt=""/>
+                          </div>
+                          <p className="text-center">{name}</p>
+                        </div>
+                      )
+                    })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            {this.state.clickFeed && !this.state.isSearching &&
               this.state.clickFeed.map((feedItem, index) => {
                 var currentSeedLabel = this.state.currentSeed.title ? `Recommendations based on ${this.state.currentSeed.title}` : `${this.state.currentSeed} Movies`;
 
