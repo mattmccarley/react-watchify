@@ -6159,20 +6159,13 @@ table {
 
 /* custom CSS begins here */
 
-.trailer-container {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  -webkit-transform: translate(-50%, -50%);
-          transform: translate(-50%, -50%);
+.movie-result__hover-buttons-container {
+  opacity: 0;
+  transition: opacity .25s;
 }
 
-.cast-member-image {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  -webkit-transform: translate(-50%, -50%);
-          transform: translate(-50%, -50%);
+.movie-result__hover-buttons-container:hover {
+  opacity: 1;
 }
 
 @media (min-width: 576px) {
