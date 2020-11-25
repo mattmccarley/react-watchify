@@ -15,7 +15,9 @@ export default function AsideContent({ focusedMedia }) {
 
   return (
     <Grid className={classes.main} item xs={5}>
-      <MediaDetails focusedMedia={focusedMedia} />
+      {focusedMedia && (
+        <MediaDetails focusedMedia={focusedMedia} />
+      )}
     </Grid>
   );
 }

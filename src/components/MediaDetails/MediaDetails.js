@@ -33,49 +33,70 @@ const useStyles = (theme) => ({
 });
 
 class MediaDetails extends React.Component {
-  constructor (props) {
+  constructor(props) {
     super(props);
 
     this.state = {
       focusedMediaDetails: null,
+      loading: true,
+    };
+
+    this.handleNewMovieDetails = this.handleNewMovieDetails.bind(this);
+  }
+
+  handleNewMovieDetails(focusedMedia) {
+    getMovieDetails(
+      { id: focusedMedia.id },
+      (data) => {
+        console.log(JSON.parse(data));
+        this.setState({
+          focusedMediaDetails: JSON.parse(data),
+          loading: false,
+        });
+      },
+      (err) => {
+        console.error(err);
+      }
+    );
+  }
+
+  componentDidMount() {
+    const { focusedMedia } = this.props;
+
+    if (focusedMedia) {
+      this.handleNewMovieDetails(focusedMedia);
     }
   }
 
   render() {
+    const { focusedMediaDetails, loading } = this.state;
     const { focusedMedia } = this.props;
 
-    if (focusedMedia) {
-      getMovieDetails(
-        {id: focusedMedia.id },
-        (data) => {
-          console.log(JSON.parse(data));
-          this.setState({
-            focusedMediaDetails: JSON.parse(data),
-          });
-        },
-        (err) => {
-          console.error(err);
-        }
-      );
+    if (
+      focusedMediaDetails &&
+      focusedMedia &&
+      focusedMediaDetails.id !== focusedMedia.id
+    ) {
+      this.handleNewMovieDetails(focusedMedia);
     }
 
-    return (
-      <React.Fragment>
-        {this.state.focusedMediaDetails && (
+    if (focusedMediaDetails && !loading) {
+      return (
+        <React.Fragment>
           <React.Fragment>
-            <Title title={this.state.focusedMediaDetails.title} />
-  
-            <InfoLine
-              focusedMediaDetails={this.state.focusedMediaDetails}
-            />
-  
-            <ActionLine voteAverage={this.state.focusedMediaDetails.vote_average} />
-  
-            <Typography>{this.state.focusedMediaDetails.overview}</Typography>
+            <Title title={focusedMediaDetails.title} />
+
+            <InfoLine focusedMediaDetails={focusedMediaDetails} />
+
+            <ActionLine voteAverage={focusedMediaDetails.vote_average} />
+
+            <Typography>{focusedMediaDetails.overview}</Typography>
           </React.Fragment>
-        )}
-      </React.Fragment>
-    );
+        </React.Fragment>
+      );
+    } else {
+      return null;
+    }
   }
 }
 
