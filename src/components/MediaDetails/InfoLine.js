@@ -47,10 +47,9 @@ class InfoLine extends React.Component {
   }
 
   getMediaReleases() {
-    getMovieReleases(
-      { id: this.props.focusedMediaDetails.id },
-      (data) => {
-        const releases = JSON.parse(data).results;
+    getMovieReleases(this.props.focusedMediaDetails.id)
+      .then((data) => {
+        const releases = data.results;
         const mediaCertificationRating = this.getMediaCertificationRating(
           releases
         );
@@ -70,16 +69,21 @@ class InfoLine extends React.Component {
           runtime,
           loading: false,
         });
-      },
-      (err) => {
-        console.error(err);
-      }
-    );
+      })
+      .catch((error) => {
+        console.warn("Error fetching movie releases: ", error);
+
+        this.setState({
+          error: "There was an error fetching the movie releases",
+        });
+      });
   }
 
   getMediaCertificationRating(releases) {
-    const usReleases = releases.filter((release) => release.iso_3166_1 === "US");
-    
+    const usReleases = releases.filter(
+      (release) => release.iso_3166_1 === "US"
+    );
+
     if (usReleases[0]) {
       return usReleases[0].release_dates[0].certification;
     } else {
@@ -89,9 +93,9 @@ class InfoLine extends React.Component {
 
   getGenres() {
     return this.props.focusedMediaDetails
-      ? this.props.focusedMediaDetails.genres.slice(0,2).map(
-          ({name}) => name
-        )
+      ? this.props.focusedMediaDetails.genres
+          .slice(0, 2)
+          .map(({ name }) => name)
       : null;
   }
 
@@ -110,7 +114,7 @@ class InfoLine extends React.Component {
       runtime,
       loading,
     } = this.state;
-    
+
     if (focusedMediaId !== this.props.focusedMediaDetails.id) {
       this.getMediaReleases();
     }
@@ -118,15 +122,17 @@ class InfoLine extends React.Component {
     if (releases && !loading) {
       return (
         <div className={classes.infoLine}>
-          <Typography className={classes.movieRating}>
-            {mediaCertificationRating}
-          </Typography>
+          {mediaCertificationRating && (
+            <Typography className={classes.movieRating}>
+              {mediaCertificationRating}
+            </Typography>
+          )}
 
           <Typography>{releaseYear}</Typography>
 
           <span>&nbsp;‧&nbsp;</span>
 
-          <Typography>{genres[0] + ' / ' + genres[1]}</Typography>
+          <Typography>{genres[0] + " / " + genres[1]}</Typography>
 
           <span>&nbsp;‧&nbsp;</span>
 

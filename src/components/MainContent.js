@@ -10,17 +10,32 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export default function MainContent({ mediaItems, onPosterClick }) {
+export default function MainContent({
+  mediaItems,
+  onPosterClick,
+  isSearching,
+  movieSearchResults,
+}) {
   const classes = useStyles();
 
-  return (
-    <Grid className={classes.main} item xs={7}>
-      <PosterGrid mediaItems={mediaItems} onPosterClick={onPosterClick} />
-    </Grid>
-  );
+  if (isSearching) {
+    return (
+      <Grid className={classes.main} item xs={7}>
+        <PosterGrid mediaItems={movieSearchResults} onPosterClick={onPosterClick} />
+      </Grid>
+    )
+  } else {
+    return (
+      <Grid className={classes.main} item xs={7}>
+        <PosterGrid mediaItems={mediaItems} onPosterClick={onPosterClick} />
+      </Grid>
+    );
+  }
 }
 
 MainContent.propTypes = {
   mediaItems: PropTypes.arrayOf(PropTypes.object).isRequired,
-  onPosterClick: PropTypes.func.isRequired
+  onPosterClick: PropTypes.func.isRequired,
+  isSearching: PropTypes.bool.isRequired,
+  movieSearchResults: PropTypes.arrayOf(PropTypes.object).isRequired,
 };

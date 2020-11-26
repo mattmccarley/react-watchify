@@ -6,29 +6,11 @@ import Typography from "@material-ui/core/Typography";
 import InfoLine from "./InfoLine";
 import ActionLine from "./ActionLine";
 import Title from "./Title";
+import Trailer from "./Trailer";
 
 const useStyles = (theme) => ({
-  title: {
-    marginBottom: theme.spacing(1),
-  },
-  actionLine: {
-    display: "flex",
-    alignItems: "center",
+  overview: {
     marginBottom: theme.spacing(2),
-  },
-  voteAverage: {
-    backgroundColor: theme.palette.grey[900],
-    color: theme.palette.grey[100],
-    height: theme.spacing(5),
-    width: theme.spacing(5),
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: "50%",
-    marginRight: theme.spacing(1),
-  },
-  trailerButton: {
-    marginRight: theme.spacing(1),
   },
 });
 
@@ -45,19 +27,20 @@ class MediaDetails extends React.Component {
   }
 
   handleNewMovieDetails(focusedMedia) {
-    getMovieDetails(
-      { id: focusedMedia.id },
-      (data) => {
-        console.log(JSON.parse(data));
+    getMovieDetails(focusedMedia.id)
+      .then((data) => {
         this.setState({
-          focusedMediaDetails: JSON.parse(data),
+          focusedMediaDetails: data,
           loading: false,
         });
-      },
-      (err) => {
-        console.error(err);
-      }
-    );
+      })
+      .catch((error) => {
+        console.warn("Error fetching movie details: ", error);
+
+        this.setState({
+          error: "There was an error fetching the movie details",
+        });
+      });
   }
 
   componentDidMount() {
@@ -70,7 +53,7 @@ class MediaDetails extends React.Component {
 
   render() {
     const { focusedMediaDetails, loading } = this.state;
-    const { focusedMedia } = this.props;
+    const { classes, focusedMedia } = this.props;
 
     if (
       focusedMediaDetails &&
@@ -88,9 +71,16 @@ class MediaDetails extends React.Component {
 
             <InfoLine focusedMediaDetails={focusedMediaDetails} />
 
-            <ActionLine voteAverage={focusedMediaDetails.vote_average} />
+            <ActionLine
+              focusedMediaDetails={focusedMediaDetails}
+              voteAverage={focusedMediaDetails.vote_average}
+            />
 
-            <Typography>{focusedMediaDetails.overview}</Typography>
+            <Typography className={classes.overview}>
+              {focusedMediaDetails.overview}
+            </Typography>
+
+            <Trailer focusedMediaDetails={focusedMediaDetails} />
           </React.Fragment>
         </React.Fragment>
       );

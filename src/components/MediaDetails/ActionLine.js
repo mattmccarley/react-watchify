@@ -1,9 +1,9 @@
 import React from "react";
-import { makeStyles } from "@material-ui/core/styles";
+import { withStyles } from "@material-ui/core/styles";
 import Button from "@material-ui/core/Button";
 import Typography from "@material-ui/core/Typography";
 
-const useStyles = makeStyles((theme) => ({
+const useStyles = (theme) => ({
   actionLine: {
     display: "flex",
     alignItems: "center",
@@ -23,28 +23,30 @@ const useStyles = makeStyles((theme) => ({
   trailerButton: {
     marginRight: theme.spacing(1),
   },
-}));
+  trailerButtonLink: {
+    color: "inherit",
+    textDecoration: "none",
+  },
+});
 
-export default function ActionLine(props) {
-  const classes = useStyles();
-  return (
-    <div className={classes.actionLine}>
-      <div className={classes.voteAverage}>
-        <Typography>{props.voteAverage}</Typography>
-      </div>
+class ActionLine extends React.Component {
+  render() {
+    const { classes, voteAverage } = this.props;
 
-      <Button
-        className={classes.trailerButton}
-        variant="contained"
-        color="secondary"
-        size="small"
-      >
-        Watch Trailer
-      </Button>
+    return (
+      <React.Fragment>
+        <div className={classes.actionLine}>
+          <div className={classes.voteAverage}>
+            <Typography>{voteAverage}</Typography>
+          </div>
 
-      <Button variant="contained" size="small">
-        + Quick List
-      </Button>
-    </div>
-  );
+          <Button variant="contained" size="small">
+            + Quick List
+          </Button>
+        </div>
+      </React.Fragment>
+    );
+  }
 }
+
+export default withStyles(useStyles)(ActionLine);
